@@ -12,7 +12,7 @@ public:
 	void Activate();
 	void Deactivate();
 
-	void Update(float dt);
+	bool Update(float dt);
 
 	bool IsAlive() const {return _isAlive;}
 

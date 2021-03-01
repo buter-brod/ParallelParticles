@@ -4,6 +4,8 @@
 
 static constexpr unsigned int maxEffectsCount = 2048;
 
+static constexpr float timeStep = 0.01f;
+
 ParticleSystem::ParticleSystem() {
 	_effects.resize(maxEffectsCount);
 }
@@ -16,37 +18,61 @@ void ParticleSystem::Start() {
 
 	const Vec2F startPos(0.5f, 0.5f);
 
+	for(unsigned effInd = 0; effInd < maxEffectsCount; ++effInd)
+		_unusedEffects.push(effInd);
+
 	auto* initialEffect = findUnusedEffect();
 	initialEffect->Activate();
 	initialEffect->InitParticles(startPos);
 }
 
 Effect* ParticleSystem::findUnusedEffect() {
-	
-	for (auto& effect : _effects) {
-		if (!effect.IsAlive())
-			return &effect;
-	}
 
+	if (!_unusedEffects.empty()) {
+		const auto ind = _unusedEffects.front();
+		_unusedEffects.pop();
+		Effect* effect = &_effects[ind];
+		return effect;
+	}
+	
 	return nullptr;
 }
 
-void ParticleSystem::Update(float dt) {
 
+void ParticleSystem::Update(float dt)
+{
+	_timeVault += dt;
+
+	while (_timeVault > timeStep) {
+		_timeVault -= timeStep;
+		update();
+	}	
+}
+
+void ParticleSystem::update() {
+
+	const float dt = timeStep;
 	std::set<Particle*> particlesToExplode;
 
-	for (Effect& effect : _effects) {
+	for(unsigned effectIndex = 0; effectIndex < _effects.size(); ++effectIndex) {
 
+		Effect& effect = _effects.at(effectIndex);
+		
 		if (!effect.IsAlive()) {
 			continue;
 		}
 
-		effect.Update(dt);
+		const bool effectAlive = effect.Update(dt);
+
+		if (!effectAlive) {
+			effect.Deactivate();
+			_unusedEffects.push(effectIndex);
+			continue;
+		}
 
 		auto& particles = effect.GetParticles();
 		for (auto& particle : particles) {
-			const bool alive = particle.GetIsAlive();
-
+			const bool alive = particle.IsAlive();
 			if (!alive)
 				continue;
 
@@ -72,7 +98,7 @@ void ParticleSystem::Update(float dt) {
 		}
 	}
 
-	for (auto& particle : particlesToExplode) {
+	for (const auto& particle : particlesToExplode) {
 		auto* newEffect = findUnusedEffect();
 
 		if (newEffect) {
@@ -81,8 +107,6 @@ void ParticleSystem::Update(float dt) {
 		} else {
 			// sorry, limit reached
 		}
-
-		
 	}
 }
 

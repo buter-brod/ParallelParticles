@@ -4,8 +4,8 @@
 
 static constexpr unsigned int maxParticlesPerEffectCount = 64;
 
-static constexpr float particleMinSpeed = 0.03f;
-static constexpr float particleMaxSpeed = 0.08f;
+static constexpr float particleMinSpeed = 0.13f;
+static constexpr float particleMaxSpeed = 0.28f;
 
 
 Effect::Effect() {
@@ -23,19 +23,19 @@ void initParticle(Particle& p, const Vec2F& pos) {
 
 	p.SetSpeed(speedVec, speed);
 
-	const auto rndColorByte = []() {
-		return static_cast<char>(rnd0xi(256));
-	};
+	const float r = rnd01();
+	const float g = rnd01();
+	const float b = rnd01();
 
-	p.SetColor(rndColorByte(), rndColorByte(), rndColorByte());
+	p.SetColor(r, g, b);
 }
 
-void Effect::Update(float dt) {
+bool Effect::Update(float dt) {
 
 	bool hasAliveParticles = false;
 
 	for (auto& particle : _particles) {
-		const bool alive = particle.GetIsAlive();
+		const bool alive = particle.IsAlive();
 
 		hasAliveParticles |= alive;
 
@@ -44,8 +44,7 @@ void Effect::Update(float dt) {
 		}
 	}
 
-	if (!hasAliveParticles)
-		Deactivate();
+	return hasAliveParticles;
 }
 
 void Effect::InitParticles(const Vec2F& pos) {

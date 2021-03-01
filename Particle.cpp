@@ -6,7 +6,7 @@
 static constexpr float particleMinLifetime = 2.f;
 static constexpr float particleMaxLifetime = 10.f;
 
-static constexpr float particleExplodeProbability = 0.75f;
+static constexpr float particleExplodeProbability = 0.25f;
 
 Particle::Particle()
 {
@@ -30,6 +30,7 @@ void Particle::Activate()
 
 	_canExplode = rnd01() < particleExplodeProbability;
 	_maxLifetime = rndfMinMax(particleMinLifetime, particleMaxLifetime);
+	_currLifetime = 0.f;
 }
 
 void Particle::SetSpeed(const Vec2F& speedVec, float speed)
@@ -39,7 +40,7 @@ void Particle::SetSpeed(const Vec2F& speedVec, float speed)
 	_speed = speed;
 }
 
-void Particle::SetColor(char r, char g, char b)
+void Particle::SetColor(float r, float g, float b)
 {
 	_color[0] = r;
 	_color[1] = g;

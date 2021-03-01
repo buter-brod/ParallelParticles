@@ -51,5 +51,8 @@ private:
 	ParticleSystem* _particleSystem = nullptr;
 
 	bool _stopRequest = false;
+
+	unsigned _effectsRendered = 0;
+	unsigned _particlesRendered = 0;
 };
 

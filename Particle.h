@@ -20,18 +20,21 @@ public:
 	void SetPosition(const Vec2F& pos);
 	const Vec2F& GetPosition() const { return _position; }
 
-	void SetColor(char r, char g, char b);
+	void SetColor(float r, float g, float b);
 
 	void GetColor(float& r, float& g, float& b);
 
 	void Update(float dt);
-	bool GetIsAlive() const { return _isAlive; }
+	inline bool IsAlive() const { return _isAlive; }
 
 	bool GetIsWithinLifetime() const;
 	bool GetCanExplode() const {return _canExplode;}
 
 	void Deactivate();
 	void Activate();
+
+	float GetMaxLifetime() const {return _maxLifetime;}
+	float GetCurrLifetime() const { return _currLifetime; }
 
 private:
 	Vec2F _position;

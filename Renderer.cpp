@@ -8,6 +8,10 @@
 
 constexpr float fpsUpdateInterval = 0.25f;
 
+static constexpr float defaultScale = 0.01f;
+static constexpr float fadeoutTime = 0.5f;
+static constexpr float timeScale = 1.f;
+
 constexpr int defaultW = 1024;
 constexpr int defaultH = 768;
 
@@ -58,7 +62,7 @@ void Renderer::updateFPS()
 		_previousFPSTime = currentTime;
 		const double fps = static_cast<double>(_frameCount) / elapsed;
 		char txtBuf[128];
-		sprintf_s(txtBuf, "opengl @ fps: %.2f", fps);
+		sprintf_s(txtBuf, "opengl @ fps: %.2f, particles %i effects %i", fps, _particlesRendered, _effectsRendered);
 		glfwSetWindowTitle(_window, txtBuf);
 		_frameCount = 0;
 	}
@@ -94,7 +98,7 @@ const char* getFragmentShader()
 		"out vec4 frag_colour;"
 		
 		"void main() {"
-		"frag_colour = vec4(color, 1.0);"
+		"frag_colour = vec4(color, 0.75);"
 		"}";
 
 	return fragmentStr;
@@ -123,8 +127,13 @@ bool Renderer::init() {
 
 	glfwMakeContextCurrent(_window);
 	glewInit();
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
+	//glEnable(GL_DEPTH_TEST);
+	//glDepthFunc(GL_LESS);
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	
 
 	float points[] = {
 		0.0f,  1.f,  0.0f,
@@ -194,9 +203,9 @@ void Renderer::loop() {
 	while(!_stopRequest) {
 
 		const auto currTime = glfwGetTime();
-		const auto dt = currTime - _prevRenderTime;
+		const auto dt = static_cast<float>(currTime - _prevRenderTime);
 	
-		_particleSystem->Update(dt);
+		_particleSystem->Update(dt * timeScale);
 		_prevRenderTime = glfwGetTime();
 
 		render();
@@ -217,15 +226,28 @@ void Renderer::renderParticle(Particle& particle) {
 	const GLint scaleUniform = glGetUniformLocation(_shader, "scale");
 	const GLint offsetUniform = glGetUniformLocation(_shader, "offset");
 
-	const float scale = 0.02f;
+	float scale = defaultScale;
+
+	const float maxTime = particle.GetMaxLifetime();
+	const float currTime = particle.GetCurrLifetime();
+
+	const float remainingTime = maxTime - currTime;
+	
+	if (remainingTime > 0.f && remainingTime < fadeoutTime) {
+		const float coeff = std::max(remainingTime / fadeoutTime, 0.001f);
+		scale *= coeff;
+	}	
+	
 	const auto& pos = particle.GetPosition();
-	const float offsetX = 2.f * (pos._x - 0.5);
-	const float offsetY = 2.f * (pos._y - 0.5);
+	const float offsetX = 2.f * (pos._x - 0.5f);
+	const float offsetY = 2.f * (pos._y - 0.5f);
 
 	glUniform1f(scaleUniform, scale);
 	glUniform2f(offsetUniform, offsetX, offsetY);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	++_particlesRendered;
 }
 
 void Renderer::renderEffect(Effect& effect) {
@@ -233,9 +255,11 @@ void Renderer::renderEffect(Effect& effect) {
 	auto& particles = effect.GetParticles();
 	for (auto& particle: particles) {
 
-		if (particle.GetIsAlive())
+		if (particle.IsAlive())
 			renderParticle(particle);
 	}
+
+	++_effectsRendered;
 }
 
 void Renderer::render() {
@@ -264,6 +288,10 @@ void Renderer::endRender() {
 void Renderer::beginRender()
 {
 	updateFPS();
+
+	_particlesRendered = 0;
+	_effectsRendered = 0;
+	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glViewport(0, 0, _width, _height);
 
