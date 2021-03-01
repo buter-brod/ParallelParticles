@@ -1,0 +1,45 @@
+#pragma once
+#include <cstdint>
+
+struct Vec2F
+{
+	Vec2F() = default;
+	Vec2F(float x, float y) : _x(x), _y(y) {}
+	float _x = 0.f;
+	float _y = 0.f;
+};
+
+class Particle
+{
+
+public:
+	Particle();
+
+	void SetSpeed(const Vec2F& speedVec, float speed);
+
+	void SetPosition(const Vec2F& pos);
+	const Vec2F& GetPosition() const { return _position; }
+
+	void SetColor(char r, char g, char b);
+
+	void GetColor(float& r, float& g, float& b);
+
+	void Update(float dt);
+	bool GetIsAlive() const { return _isAlive; }
+
+	bool GetIsWithinLifetime() const;
+	bool GetCanExplode() const {return _canExplode;}
+
+	void Deactivate();
+	void Activate();
+
+private:
+	Vec2F _position;
+	Vec2F _speedVec;
+	float _speed = 0.f;
+	bool _isAlive = false;
+	bool _canExplode = false;
+	float _currLifetime = 0.f;
+	float _maxLifetime = 0.f;
+	float _color[3] = {1.f, 1.f, 1.f};
+};
