@@ -7,11 +7,19 @@ struct Vec2F
 	Vec2F(float x, float y) : _x(x), _y(y) {}
 	float _x = 0.f;
 	float _y = 0.f;
+
+	bool operator<(const Vec2F& other) const {
+
+		if (_x == other._x) {
+			return _y < other._y;
+		}
+		
+		return _x < other._x;
+	}
 };
 
 class Particle
 {
-
 public:
 	Particle();
 

@@ -21,7 +21,7 @@ protected:
 
 private:
 	std::vector<Effect> _effects;
-	std::queue<unsigned> _unusedEffects;
+	std::set<unsigned> _unusedEffects;
 	float _timeVault = 0.f;
 };
 

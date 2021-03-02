@@ -22,6 +22,11 @@ unsigned int rnd0xi(const unsigned int x) {
 	return rnd() % x;
 }
 
+unsigned int rndMinMax(const unsigned int min, const unsigned int max)
+{
+	return min + rnd0xi(max - min);
+}
+
 float rndfMinMax(const float min, const float max) {
 	return min + rnd01() * (max - min);
 }
