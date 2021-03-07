@@ -2,13 +2,7 @@
 #include "Utils.h"
 #include <cassert>
 
-static constexpr unsigned int maxParticlesPerEffectCount = 256;
-
-static constexpr float particleMinSpeed = 0.1f;
-static constexpr float particleMaxSpeed = 0.3f;
-
-static constexpr float timeStep = 0.01f;
-static constexpr float timeScale = 1.f;
+#include "Config.h"
 
 Effect::Effect(const Effect& other) {
 
@@ -199,20 +193,20 @@ void Effect::start(const Vec2F pos) {
 		const auto currTime = getTime();
 		const auto dt = static_cast<float>(currTime - _prevUpdateTime);
 
-		_timeVault += dt * timeScale;
+		_timeVault += dt * effectSimTimeScale;
 		_prevUpdateTime = currTime;
 
-		if (_timeVault < timeStep) {
-			const float sleepTime = timeStep - _timeVault;
+		if (_timeVault < effectSimTimeStep) {
+			const float sleepTime = effectSimTimeStep - _timeVault;
 			const auto sleepMs = static_cast<unsigned>(sleepTime * 1000.f);
 			std::this_thread::sleep_for(std::chrono::milliseconds(sleepMs));
 			continue;
 		}
 		
-		while (_isAlive && _timeVault >= timeStep && !_stopRequested)
+		while (_isAlive && _timeVault >= effectSimTimeStep && !_stopRequested)
 		{
-			_timeVault -= timeStep;
-			Update(timeStep);
+			_timeVault -= effectSimTimeStep;
+			Update(effectSimTimeStep);
 		}		
 	}
 
@@ -225,7 +219,6 @@ void Effect::Start(const Vec2F& pos) {
 	
 	assert(_isAlive);
 	Join();
-
 	
 	_thread = std::thread([this, pos](){start(pos);});
 }
@@ -241,13 +234,7 @@ void Effect::Deactivate() {
 	assert(_isAlive);
 	_isAlive = false;
 	
-	//const unsigned bufferInd = _bufferInd;
-
 	swapParticleBuffers();
-	
-	// if deactivated, make both buffers equal
-	//_particles[bufferInd] = _particles[1 - bufferInd];
-
 	Stop();
 
 	//printf("effect %i deactivated\n", _num);

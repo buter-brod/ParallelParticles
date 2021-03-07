@@ -41,15 +41,14 @@ protected:
 private:
 	std::vector<Particle> _particles[2];
 	std::set<Vec2F> _exploded[2];
-	
-	std::atomic<unsigned> _bufferInd = 0;
-	std::atomic<unsigned> _explodeInd = 0;
 
 	float _timeVault = 0.f;
 	float _prevUpdateTime = 0.f;
 
 	std::thread _thread;
-	
+
+	std::atomic<unsigned> _bufferInd = 0;
+	std::atomic<unsigned> _explodeInd = 0;
 	std::atomic<bool> _isAlive = false;
 	std::atomic<bool> _swapExplodesRequested;
 	std::atomic<bool> _stopRequested;

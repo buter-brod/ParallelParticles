@@ -1,9 +1,7 @@
 #include "ParticleSystem.h"
 #include <set>
 #include <random>
-
-static constexpr unsigned int maxEffectsCount = 1024;
-static constexpr float timeStep = 0.01f;
+#include "Config.h"
 
 ParticleSystem::ParticleSystem() {
 	_effects.resize(maxEffectsCount);
@@ -46,8 +44,8 @@ void ParticleSystem::Update(float dt)
 {
 	_timeVault += dt;
 
-	while (_timeVault > timeStep) {
-		_timeVault -= timeStep;
+	while (_timeVault > particleSystemTimeStep) {
+		_timeVault -= particleSystemTimeStep;
 		update();
 	}	
 }

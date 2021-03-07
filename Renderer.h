@@ -30,6 +30,8 @@ protected:
 	void renderEffect(const Effect&);
 	void renderParticle(const Particle&);
 
+	void initUniforms();
+
 private:
 	unsigned int _fShader = 0;
 	unsigned int _vShader = 0;
@@ -44,9 +46,9 @@ private:
 	int _height = 0;
 
 	int _frameCount = 0;
-	double _previousFPSTime = 0.0;
+	float _previousFPSTime = 0.f;
 
-	double _prevRenderTime = 0.f;
+	float _prevRenderTime = 0.f;
 
 	ParticleSystem* _particleSystem = nullptr;
 
@@ -54,5 +56,11 @@ private:
 
 	unsigned _effectsRendered = 0;
 	unsigned _particlesRendered = 0;
+
+	int _alphaUniform = -1;
+	int _colorUniform = -1;
+	int _scaleUniform = -1;
+	int _offsetUniform = -1;
+	
 };
 

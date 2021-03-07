@@ -1,20 +1,16 @@
 #include "Renderer.h"
 #include <cstdio>
 #include <functional>
+#include <string>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+
+#include "Config.h"
 #include "ParticleSystem.h"
 #include "Utils.h"
 
 constexpr float fpsUpdateInterval = 0.25f;
-
-static constexpr float defaultScale = 0.01f;
-static constexpr float fadeoutTime = 0.5f;
-static constexpr float timeScale = 1.f;
-
-constexpr int defaultW = 1024;
-constexpr int defaultH = 768;
 
 Renderer*& RendererPtr() {
 	static Renderer* r = nullptr;
@@ -54,10 +50,10 @@ bool Renderer::SetSize(const int x, const int y) {
 void Renderer::updateFPS()
 {
 	if (_previousFPSTime == 0.0)
-		_previousFPSTime = getTime();;
+		_previousFPSTime = getTime();
 
-	const double currentTime = getTime();
-	const double elapsed = currentTime - _previousFPSTime;
+	const auto currentTime = getTime();
+	const auto elapsed = currentTime - _previousFPSTime;
 	if (elapsed > fpsUpdateInterval)
 	{
 		_previousFPSTime = currentTime;
@@ -78,14 +74,12 @@ const char* getVerterShader() {
 		"in vec3 vp;"
 		"uniform float scale;"
 		"uniform vec2 offset;"
-		"uniform vec3 incolor;"
 		"out vec3 color;"
 		"void main() {"
 		"vec4 position = vec4(vp, 1.0);"
 		"position[0] = position[0] * scale + offset[0];"
 		"position[1] = position[1] * scale + offset[1];"
 		"gl_Position = position;"
-		"color = incolor;"
 		"}";
 
 	return shaderStr;
@@ -95,11 +89,11 @@ const char* getFragmentShader()
 {
 	static const char* fragmentStr =
 		"#version 400\n"
-		"in vec3 color;"
-		"out vec4 frag_colour;"
-		
+		"uniform float alpha;"
+		"uniform vec3 color;"
+		"out vec4 frag_color;"
 		"void main() {"
-		"frag_colour = vec4(color, 0.75);"
+		"frag_color = vec4(color, alpha);"
 		"}";
 
 	return fragmentStr;
@@ -115,7 +109,7 @@ bool Renderer::init() {
 		return false;
 	}
 
-	SetSize(defaultW, defaultH);
+	SetSize(sceneWidth, sceneHeight);
 
 	_window = glfwCreateWindow(_width, _height, "ParallelParticles", nullptr, nullptr);
 
@@ -164,26 +158,25 @@ bool Renderer::init() {
 	glShaderSource(fs, 1, &fsStr, nullptr);
 	glCompileShader(fs);
 
-	{
-		GLint isCompiled = 0;
-		glGetShaderiv(vs, GL_COMPILE_STATUS, &isCompiled);
-		if (isCompiled == GL_FALSE)
-		{
-			GLint maxLength = 0;
-			glGetShaderiv(vs, GL_INFO_LOG_LENGTH, &maxLength);
+	//{
+	//	GLint isCompiled = 0;
+	//	glGetShaderiv(vs, GL_COMPILE_STATUS, &isCompiled);
+	//	if (isCompiled == GL_FALSE)
+	//	{
+	//		GLint maxLength = 0;
+	//		glGetShaderiv(vs, GL_INFO_LOG_LENGTH, &maxLength);
 
-			// The maxLength includes the NULL character
-			std::vector<GLchar> errorLog(maxLength);
-			glGetShaderInfoLog(vs, maxLength, &maxLength, &errorLog[0]);
-			char *j = new char [maxLength];
-			memcpy(j, &errorLog[0], maxLength);
+	//		// The maxLength includes the NULL character
+	//		std::vector<GLchar> errorLog(maxLength);
+	//		glGetShaderInfoLog(vs, maxLength, &maxLength, &errorLog[0]);
+	//		char *j = new char [maxLength];
+	//		memcpy(j, &errorLog[0], maxLength);
 
-			// Provide the infolog in whatever manor you deem best.
-			// Exit with failure.
-			glDeleteShader(vs); // Don't leak the shader.
-			
-		}
-	}
+	//		// Provide the infolog in whatever manor you deem best.
+	//		// Exit with failure.
+	//		glDeleteShader(vs); // Don't leak the shader.
+	//	}
+	//}
 
 	_shader = glCreateProgram();
 	glAttachShader(_shader, fs);
@@ -192,6 +185,8 @@ bool Renderer::init() {
 
 	glfwSetWindowSizeCallback(_window, windowSizeCB);
 	glfwSetWindowCloseCallback(_window, windowCloseCB);
+
+	initUniforms();
 
 	loop();
 	return true;
@@ -206,7 +201,7 @@ void Renderer::loop() {
 		const auto currTime = getTime();
 		const auto dt = static_cast<float>(currTime - _prevRenderTime);
 	
-		_particleSystem->Update(dt * timeScale);
+		_particleSystem->Update(dt * particleSystemTimeScale);
 		_prevRenderTime = getTime();
 
 		render();
@@ -217,19 +212,29 @@ void Renderer::loop() {
 	glfwSetWindowShouldClose(_window, 1);
 }
 
+void Renderer::initUniforms() {
+
+	const auto initUniform = [this](const std::string& name, int& var) {
+		if (var < 0)
+			var = glGetUniformLocation(_shader, name.c_str());
+	};
+
+	initUniform("alpha", _alphaUniform);
+	initUniform("color", _colorUniform);
+	initUniform("scale", _scaleUniform);
+	initUniform("offset", _offsetUniform);
+}
+
 void Renderer::renderParticle(const Particle& particle) {
-	
-	const GLint colorUniform = glGetUniformLocation(_shader, "incolor");
+
+	glUniform1f(_alphaUniform, particleAlpha);
 	
 	float r, g, b;
 	particle.GetColor(r, g, b);
 	
-	glUniform3f(colorUniform, r, g, b);
+	glUniform3f(_colorUniform, r, g, b);
 
-	const GLint scaleUniform = glGetUniformLocation(_shader, "scale");
-	const GLint offsetUniform = glGetUniformLocation(_shader, "offset");
-
-	float scale = defaultScale;
+	float scale = particleScaleDefault;
 	constexpr float zeroScale = 0.001f;
 
 	if (!particle.GetIsWithinLifetime()) {
@@ -240,9 +245,9 @@ void Renderer::renderParticle(const Particle& particle) {
 		const float maxTime = particle.GetMaxLifetime();
 		const float currTime = particle.GetCurrLifetime();
 		const float remainingTime = maxTime - currTime;
-		if (remainingTime < fadeoutTime)
+		if (remainingTime < particleFadeoutTime)
 		{
-			const float coeff = std::max(remainingTime / fadeoutTime, zeroScale);
+			const float coeff = std::max(remainingTime / particleFadeoutTime, zeroScale);
 			scale *= coeff;
 		}
 	}
@@ -251,8 +256,8 @@ void Renderer::renderParticle(const Particle& particle) {
 	const float offsetX = 2.f * (pos._x - 0.5f);
 	const float offsetY = 2.f * (pos._y - 0.5f);
 
-	glUniform1f(scaleUniform, scale);
-	glUniform2f(offsetUniform, offsetX, offsetY);
+	glUniform1f(_scaleUniform, scale);
+	glUniform2f(_offsetUniform, offsetX, offsetY);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
@@ -303,7 +308,7 @@ void Renderer::beginRender()
 	_particlesRendered = 0;
 	_effectsRendered = 0;
 	
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT);
 	glViewport(0, 0, _width, _height);
 
 	glUseProgram(_shader);

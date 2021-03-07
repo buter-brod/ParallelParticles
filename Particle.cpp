@@ -3,9 +3,8 @@
 #include "Utils.h"
 #include <cstdint>
 
-static constexpr float particleMinLifetime = 1.f;
-static constexpr float particleMaxLifetime = 3.f;
-static constexpr float particleExplodeProbability = 0.125f;
+#include "Config.h"
+
 
 Particle::Particle()
 {
