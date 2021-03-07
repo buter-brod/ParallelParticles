@@ -12,7 +12,7 @@ Particle::Particle()
 
 void Particle::SetPosition(const Vec2F& pos)
 {
-	_position = pos;
+	_info._position = pos;
 }
 
 void Particle::Deactivate()
@@ -27,8 +27,8 @@ void Particle::Activate()
 	_isAlive = true;
 
 	_canExplode = rnd01() < particleExplodeProbability;
-	_maxLifetime = rndfMinMax(particleMinLifetime, particleMaxLifetime);
-	_currLifetime = 0.f;
+	_info._maxLifetime = rndfMinMax(particleMinLifetime, particleMaxLifetime);
+	_info._currLifetime = 0.f;
 }
 
 void Particle::SetSpeed(const Vec2F& speedVec, float speed)
@@ -39,28 +39,26 @@ void Particle::SetSpeed(const Vec2F& speedVec, float speed)
 
 void Particle::SetColor(float r, float g, float b)
 {
-	_color[0] = r;
-	_color[1] = g;
-	_color[2] = b;
+	_info._color[0] = r;
+	_info._color[1] = g;
+	_info._color[2] = b;
 }
 
-void Particle::GetColor(float& r, float& g, float& b) const {
-	r = _color[0];
-	g = _color[1];
-	b = _color[2];
+bool ParticleVisualInfo::GetIsWithinLifetime() const {
+	const bool lifetimeValid = _currLifetime < _maxLifetime;
+	return lifetimeValid;
 }
 
 bool Particle::GetIsWithinLifetime() const {
 	
-	const bool lifetimeValid = _currLifetime < _maxLifetime;
-	return lifetimeValid;
+	return _info.GetIsWithinLifetime();
 }
 
 void Particle::Update(float dt)
 {
 	assert(_isAlive);
-	_position._x += _speedVec._x * dt * _speed;
-	_position._y += _speedVec._y * dt * _speed;
+	_info._position._x += _speedVec._x * dt * _speed;
+	_info._position._y += _speedVec._y * dt * _speed;
 
-	_currLifetime += dt;
+	_info._currLifetime += dt;
 }

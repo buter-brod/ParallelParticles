@@ -11,30 +11,30 @@ public:
 	Effect();
 	Effect(const Effect& other);
 
-	~Effect();
+	~Effect();	
 	
-	const std::vector<Particle>& GetParticlesToRead() const;
 	void Start(const Vec2F& pos);
 	
 	void Stop();
 	void Join();
 
-	void Activate();
-	void Deactivate();
 	bool IsAlive() const { return _isAlive; }
 	
-	void Update(float dt);
-
+	std::vector<ParticleVisualInfo> GetParticlesInfo() const;
 	std::set<Vec2F> GetExploded();
 
 	unsigned _num = 0; //TODO DEBUG!!! REMOVE!!!
 
 protected:
+	const std::vector<Particle>& getParticlesToRead() const;
 	std::vector<Particle>& getParticlesToWrite();
 	void swapParticleBuffers();
 	void swapExplodeBuffers();
 
 	void start(Vec2F pos);
+	void update(float dt);
+
+	void deactivate();
 
 	void checkParticleLife(Particle& p, unsigned index);
 

@@ -13,12 +13,29 @@ Effect::Effect(const Effect& other) {
 Effect::~Effect() {
 
 	if (_isAlive)
-		Deactivate();
+		deactivate();
 	
 	Join();
 }
 
-const std::vector<Particle>& Effect::GetParticlesToRead() const {
+std::vector<ParticleVisualInfo> Effect::GetParticlesInfo() const {
+
+	// todo: guard! prevert swap buffers while copying
+
+	const auto& particlesToRead = getParticlesToRead();
+
+	std::vector<ParticleVisualInfo> particlesInfoVec;
+	particlesInfoVec.reserve(particlesToRead.size());
+
+	for (const auto& particle : particlesToRead) {
+		if (particle.IsAlive())
+			particlesInfoVec.push_back(particle.GetVisualInfo());
+	}
+
+	return particlesInfoVec;
+}
+
+const std::vector<Particle>& Effect::getParticlesToRead() const {
 
 	return _particles[1 - _bufferInd];
 }
@@ -100,7 +117,7 @@ void Effect::checkParticleLife(Particle& p, const unsigned index) {
 	}
 }
 
-void Effect::Update(const float dt) {
+void Effect::update(const float dt) {
 
 	//printf("effect %i Update\n", _num);
 
@@ -114,7 +131,7 @@ void Effect::Update(const float dt) {
 	bool hadAliveParticlesBefore = false;
 	bool hasAliveParticlesNow = false;
 
-	const auto& particlesToRead = GetParticlesToRead();
+	const auto& particlesToRead = getParticlesToRead();
 	auto& particlesToWrite = getParticlesToWrite();
 
 	for (unsigned index = 0; index < particlesToRead.size(); ++index) {
@@ -142,8 +159,10 @@ void Effect::Update(const float dt) {
 
 	if (!hasAliveParticlesNow) {
 		const bool noExplosionsPending = _exploded[_explodeInd].empty() && _exploded[1 - _explodeInd].empty();
-		if (noExplosionsPending)
-			Deactivate();
+		if (noExplosionsPending) {
+			swapParticleBuffers();
+			deactivate();
+		}
 	}
 }
 
@@ -173,7 +192,7 @@ void Effect::swapParticleBuffers() {
 void Effect::start(const Vec2F pos) {
 
 	//printf("effect %i start\n", _num);
-	
+
 	const unsigned int numParticlesToGenerate = rndMinMax(1, maxParticlesPerEffectCount);
 	auto& particles = getParticlesToWrite();
 
@@ -206,35 +225,27 @@ void Effect::start(const Vec2F pos) {
 		while (_isAlive && _timeVault >= effectSimTimeStep && !_stopRequested)
 		{
 			_timeVault -= effectSimTimeStep;
-			Update(effectSimTimeStep);
+			update(effectSimTimeStep);
 		}		
 	}
-
-	_stopRequested = false;
 }
 
 void Effect::Start(const Vec2F& pos) {
 
 	//printf("effect %i Start\n", _num);
-	
-	assert(_isAlive);
+
 	Join();
+	assert(!_isAlive);
+	_isAlive = true;
+	_stopRequested = false;
 	
 	_thread = std::thread([this, pos](){start(pos);});
 }
 
-void Effect::Activate() {
-	assert(!_isAlive);
-	_isAlive = true;
-
-	//printf("effect %i activated\n", _num);
-}
-
-void Effect::Deactivate() {
+void Effect::deactivate() {
 	assert(_isAlive);
 	_isAlive = false;
 	
-	swapParticleBuffers();
 	Stop();
 
 	//printf("effect %i deactivated\n", _num);

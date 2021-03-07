@@ -1,5 +1,5 @@
 #pragma once
-#include <set>
+#include <unordered_set>
 #include "Effect.h"
 
 class ParticleSystem
@@ -20,7 +20,7 @@ protected:
 
 private:
 	std::vector<Effect> _effects;
-	std::set<unsigned> _unusedEffects;
+	std::unordered_set<unsigned> _unusedEffects;
 
 	std::atomic<bool> _stopExplode;
 	float _timeVault = 0.f;

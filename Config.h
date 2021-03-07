@@ -22,3 +22,5 @@ static constexpr float effectSimTimeScale = 1.f;
 
 static constexpr int sceneWidth = 1024;
 static constexpr int sceneHeight = 768;
+
+static constexpr unsigned maxThreads = 1024;

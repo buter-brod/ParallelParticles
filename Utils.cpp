@@ -12,7 +12,7 @@ size_t rnd()
 }
 
 float getTime() {
-	return glfwGetTime();
+	return static_cast<float>(glfwGetTime());
 }
 
 float rnd01() {

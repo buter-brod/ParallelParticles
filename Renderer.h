@@ -5,7 +5,7 @@
 
 struct GLFWwindow;
 class Effect;
-class Particle;
+struct ParticleVisualInfo;
 class ParticleSystem;
 
 class Renderer
@@ -28,7 +28,7 @@ protected:
 
 	std::vector<Effect>& getEffects();
 	void renderEffect(const Effect&);
-	void renderParticle(const Particle&);
+	void renderParticle(const ParticleVisualInfo&);
 
 	void initUniforms();
 

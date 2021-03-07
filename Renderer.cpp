@@ -225,25 +225,26 @@ void Renderer::initUniforms() {
 	initUniform("offset", _offsetUniform);
 }
 
-void Renderer::renderParticle(const Particle& particle) {
+void Renderer::renderParticle(const ParticleVisualInfo& particleInfo) {
 
 	glUniform1f(_alphaUniform, particleAlpha);
 	
-	float r, g, b;
-	particle.GetColor(r, g, b);
+	const float r = particleInfo._color[0];
+	const float g = particleInfo._color[1];
+	const float b = particleInfo._color[2];
 	
 	glUniform3f(_colorUniform, r, g, b);
 
 	float scale = particleScaleDefault;
 	constexpr float zeroScale = 0.001f;
 
-	if (!particle.GetIsWithinLifetime()) {
+	if (!particleInfo.GetIsWithinLifetime()) {
 		scale = zeroScale;
 	}
 	else 
 	{
-		const float maxTime = particle.GetMaxLifetime();
-		const float currTime = particle.GetCurrLifetime();
+		const float maxTime = particleInfo._maxLifetime;
+		const float currTime = particleInfo._currLifetime;
 		const float remainingTime = maxTime - currTime;
 		if (remainingTime < particleFadeoutTime)
 		{
@@ -252,7 +253,7 @@ void Renderer::renderParticle(const Particle& particle) {
 		}
 	}
 	
-	const auto& pos = particle.GetPosition();
+	const auto& pos = particleInfo._position;
 	const float offsetX = 2.f * (pos._x - 0.5f);
 	const float offsetY = 2.f * (pos._y - 0.5f);
 
@@ -266,11 +267,10 @@ void Renderer::renderParticle(const Particle& particle) {
 
 void Renderer::renderEffect(const Effect& effect) {
 	
-	const auto& particles = effect.GetParticlesToRead();
-	for (const auto& particle: particles) {
+	const auto& particles = effect.GetParticlesInfo();
+	for (const auto& particleInfo : particles) {
 
-		if (particle.IsAlive())
-			renderParticle(particle);
+		renderParticle(particleInfo);
 	}
 
 	++_effectsRendered;

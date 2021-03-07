@@ -24,7 +24,6 @@ void ParticleSystem::Start() {
 		_unusedEffects.insert(effInd);
 
 	auto* initialEffect = findUnusedEffect();
-	initialEffect->Activate();
 	initialEffect->Start(startPos);
 }
 
@@ -94,8 +93,8 @@ void ParticleSystem::update() {
 			
 		if (newEffect) {
 			//printf("ParticleSystem::update unused effect found %i, will activate now \n", newEffect->_num);
+
 			
-			newEffect->Activate();
 			newEffect->Start(explodePos);
 		} else {
 			// sorry, limit reached

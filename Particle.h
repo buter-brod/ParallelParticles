@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <atomic>
 
 struct Vec2F
 {
@@ -18,39 +19,49 @@ struct Vec2F
 	}
 };
 
+struct ParticleVisualInfo {
+
+	bool GetIsWithinLifetime() const;
+	
+	Vec2F _position;
+	float _currLifetime = 0.f;
+	float _maxLifetime = 0.f;
+	float _color[3] = {1.f, 1.f, 1.f};
+};
+
 class Particle
 {
 public:
 	Particle();
+	//Particle(const Particle&);
 
 	void SetSpeed(const Vec2F& speedVec, float speed);
 
 	void SetPosition(const Vec2F& pos);
-	const Vec2F& GetPosition() const { return _position; }
+	const Vec2F& GetPosition() const { return _info._position; }
 
 	void SetColor(float r, float g, float b);
-
-	void GetColor(float& r, float& g, float& b) const;
+	//void GetColor(float& r, float& g, float& b) const;
 
 	void Update(float dt);
-	inline bool IsAlive() const { return _isAlive; }
+	bool IsAlive() const { return _isAlive; }
 
 	bool GetIsWithinLifetime() const;
 	bool GetCanExplode() const {return _canExplode;}
 
+	const ParticleVisualInfo& GetVisualInfo() const {return _info;}
+
 	void Deactivate();
 	void Activate();
 
-	float GetMaxLifetime() const {return _maxLifetime;}
-	float GetCurrLifetime() const { return _currLifetime; }
+	float GetMaxLifetime() const {return _info._maxLifetime;}
+	float GetCurrLifetime() const { return _info._currLifetime; }
 
 private:
-	Vec2F _position;
+	ParticleVisualInfo _info;
 	Vec2F _speedVec;
 	float _speed = 0.f;
-	bool _isAlive = false;
 	bool _canExplode = false;
-	float _currLifetime = 0.f;
-	float _maxLifetime = 0.f;
-	float _color[3] = {1.f, 1.f, 1.f};
+
+	bool _isAlive = false;
 };
