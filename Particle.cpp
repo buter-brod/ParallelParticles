@@ -3,10 +3,9 @@
 #include "Utils.h"
 #include <cstdint>
 
-static constexpr float particleMinLifetime = 2.f;
-static constexpr float particleMaxLifetime = 10.f;
-
-static constexpr float particleExplodeProbability = 0.25f;
+static constexpr float particleMinLifetime = 1.f;
+static constexpr float particleMaxLifetime = 3.f;
+static constexpr float particleExplodeProbability = 0.125f;
 
 Particle::Particle()
 {
@@ -35,7 +34,6 @@ void Particle::Activate()
 
 void Particle::SetSpeed(const Vec2F& speedVec, float speed)
 {
-	assert(_isAlive);
 	_speedVec = speedVec;
 	_speed = speed;
 }
@@ -47,7 +45,7 @@ void Particle::SetColor(float r, float g, float b)
 	_color[2] = b;
 }
 
-void Particle::GetColor(float& r, float& g, float& b) {
+void Particle::GetColor(float& r, float& g, float& b) const {
 	r = _color[0];
 	g = _color[1];
 	b = _color[2];

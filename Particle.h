@@ -30,7 +30,7 @@ public:
 
 	void SetColor(float r, float g, float b);
 
-	void GetColor(float& r, float& g, float& b);
+	void GetColor(float& r, float& g, float& b) const;
 
 	void Update(float dt);
 	inline bool IsAlive() const { return _isAlive; }

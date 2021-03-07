@@ -1,5 +1,6 @@
 #include "Utils.h"
 #include <random>
+#include <GLFW/glfw3.h>
 
 static const float RANDOM_STRENGTH = 5000.f;
 
@@ -10,8 +11,12 @@ size_t rnd()
 	return static_cast<size_t>(dist(rng));
 }
 
+float getTime() {
+	return glfwGetTime();
+}
+
 float rnd01() {
-	return float(rnd()) / RANDOM_STRENGTH;
+	return static_cast<float>(rnd()) / RANDOM_STRENGTH;
 }
 
 float rnd0xf(const float x) {
@@ -19,7 +24,9 @@ float rnd0xf(const float x) {
 }
 
 unsigned int rnd0xi(const unsigned int x) {
-	return rnd() % x;
+	const auto randomNum = rnd();
+	const auto result = randomNum % (x + 1);
+	return result;
 }
 
 unsigned int rndMinMax(const unsigned int min, const unsigned int max)

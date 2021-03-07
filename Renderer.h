@@ -27,8 +27,8 @@ protected:
 	void updateFPS();
 
 	std::vector<Effect>& getEffects();
-	void renderEffect(Effect&);
-	void renderParticle(Particle&);
+	void renderEffect(const Effect&);
+	void renderParticle(const Particle&);
 
 private:
 	unsigned int _fShader = 0;

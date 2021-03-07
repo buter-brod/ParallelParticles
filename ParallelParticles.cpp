@@ -7,5 +7,6 @@ int main()
 	system.Start();
 
 	Renderer r(&system);
+
 	return 0;
 }

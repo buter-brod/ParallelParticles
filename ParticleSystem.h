@@ -1,9 +1,6 @@
 #pragma once
-#include <queue>
 #include <set>
-
 #include "Effect.h"
-//#include <set>
 
 class ParticleSystem
 {
@@ -12,6 +9,8 @@ public:
 
 	void Start();
 	void Update(float dt);
+	void Stop();
+	void SoftStop();
 
 	std::vector<Effect>& GetEffects();
 
@@ -22,6 +21,8 @@ protected:
 private:
 	std::vector<Effect> _effects;
 	std::set<unsigned> _unusedEffects;
+
+	std::atomic<bool> _stopExplode;
 	float _timeVault = 0.f;
 };
 

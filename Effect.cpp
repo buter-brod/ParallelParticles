@@ -2,10 +2,13 @@
 #include "Utils.h"
 #include <cassert>
 
-static constexpr unsigned int maxParticlesPerEffectCount = 64;
+static constexpr unsigned int maxParticlesPerEffectCount = 256;
 
 static constexpr float particleMinSpeed = 0.1f;
 static constexpr float particleMaxSpeed = 0.3f;
+
+static constexpr float timeStep = 0.01f;
+static constexpr float timeScale = 1.f;
 
 Effect::Effect(const Effect& other) {
 
@@ -13,13 +16,20 @@ Effect::Effect(const Effect& other) {
 	assert(false);
 }
 
-std::vector<Particle>& Effect::GetParticles() {
+Effect::~Effect() {
 
-	const auto readBufferInd = 1 - _bufferInd;
-	return _particles[readBufferInd];
+	if (_isAlive)
+		Deactivate();
+	
+	Join();
 }
 
-std::vector<Particle>& Effect::getActiveParticles()
+const std::vector<Particle>& Effect::GetParticlesToRead() const {
+
+	return _particles[1 - _bufferInd];
+}
+
+std::vector<Particle>& Effect::getParticlesToWrite()
 {
 	return _particles[_bufferInd];
 }
@@ -31,26 +41,37 @@ Effect::Effect() {
 }
 
 void initParticle(Particle& p, const Vec2F& pos) {
-	
-	p.Activate();
+
+	//printf("effect initParticle at %f %f \n", pos._x, pos._y);
 
 	p.SetPosition(pos);
+
 	const Vec2F speedVec(rnd01() - 0.5f, rnd01() - 0.5f);
 	const float speed = rndfMinMax(particleMinSpeed, particleMaxSpeed);
-
 	p.SetSpeed(speedVec, speed);
 
 	const float r = rnd01();
 	const float g = rnd01();
 	const float b = rnd01();
-
 	p.SetColor(r, g, b);
+
+	p.Activate();
 }
 
 std::set<Vec2F> Effect::GetExploded() {
 
-	const auto readExplodeInd = 1 - _explodeInd;
-	const auto& readExplodeSet = _exploded[readExplodeInd];
+	std::set<Vec2F> readExplodeSet;
+	
+	if (_swapExplodesRequested)
+		return readExplodeSet;
+	
+	readExplodeSet = _exploded[1 - _explodeInd];
+	_swapExplodesRequested = true;
+
+	//const auto explodedSize = readExplodeSet.size();
+	//if (explodedSize > 0)
+		//printf("effect %i, GetExploded called, returning %i explodes \n", _num, explodedSize);
+
 	return readExplodeSet;
 }
 
@@ -64,15 +85,22 @@ void Effect::checkParticleLife(Particle& p, const unsigned index) {
 		pos._y < 0.f;
 
 	if (outOfBounds) {
+		//printf("effect %i, particle %i deactivated due to position \n", _num, index);
 		p.Deactivate();
 		return;
-	}	
+	}
 
 	const bool dieOrExplodeTime = !p.GetIsWithinLifetime();
 	if (dieOrExplodeTime)
 	{
-		if (p.GetCanExplode())
+		if (p.GetCanExplode()) {
+			//printf("effect %i, particle %i added to explosion list and deactivated \n", _num, index);
 			_exploded[_explodeInd].insert(pos);
+		}
+		else 
+		{
+			//printf("effect %i, particle %i deactivated\n", _num, index);
+		}
 
 		p.Deactivate();
 	}
@@ -80,70 +108,148 @@ void Effect::checkParticleLife(Particle& p, const unsigned index) {
 
 void Effect::Update(const float dt) {
 
-	bool hasAliveParticles = false;
+	//printf("effect %i Update\n", _num);
 
-	const auto& particlesToRead = GetParticles();
-	auto& particlesToWrite = getActiveParticles();
+	if (_swapExplodesRequested)
+	{
+		swapExplodeBuffers();
+		_exploded[_explodeInd].clear();
+		_swapExplodesRequested = false;
+	}
+	
+	bool hadAliveParticlesBefore = false;
+	bool hasAliveParticlesNow = false;
 
-	_exploded[_explodeInd].clear();
+	const auto& particlesToRead = GetParticlesToRead();
+	auto& particlesToWrite = getParticlesToWrite();
 
 	for (unsigned index = 0; index < particlesToRead.size(); ++index) {
 
-		const auto& particleToRead = particlesToRead.at(index);
-
 		auto& particleToWrite = particlesToWrite.at(index);
-		particleToWrite = particleToRead;
+
+		// copying
+		particleToWrite = particlesToRead.at(index);
 		
-		const bool alive = particleToRead.IsAlive();
+		const bool alive = particleToWrite.IsAlive();
 		if (alive) {
+
+			hadAliveParticlesBefore |= true;
+
 			particleToWrite.Update(dt);
 			checkParticleLife(particleToWrite, index);
-			hasAliveParticles |= particleToWrite.IsAlive();
+
+			hasAliveParticlesNow |= particleToWrite.IsAlive();
 		}
 	}
 
-	if (!hasAliveParticles && _exploded[_explodeInd].empty())
-		Deactivate();
-	
-	swapBuffers();
-	swapExplodes();
+	if (hadAliveParticlesBefore || hasAliveParticlesNow) {
+		swapParticleBuffers();
+	}
+
+	if (!hasAliveParticlesNow) {
+		const bool noExplosionsPending = _exploded[_explodeInd].empty() && _exploded[1 - _explodeInd].empty();
+		if (noExplosionsPending)
+			Deactivate();
+	}
 }
 
-void Effect::swapExplodes() {
+void Effect::Join() {
+
+	if (_thread.joinable())
+		_thread.join();
+}
+
+void Effect::Stop() {
+	_stopRequested = true;
+}
+
+void Effect::swapExplodeBuffers() {
+
 	_explodeInd ^= 1;
+
+	//printf("effect %i swapExplodes, now %i \n", _num, _explodeInd.load());
 }
 
-void Effect::swapBuffers() {
+void Effect::swapParticleBuffers() {
 	_bufferInd ^= 1;
+
+	//printf("effect %i swapBuffers, now %i \n", _num, _bufferInd.load());
 }
 
-void Effect::InitParticles(const Vec2F& pos) {
+void Effect::start(const Vec2F pos) {
 
-	assert(_isAlive);
+	//printf("effect %i start\n", _num);
 	
-	const unsigned int numParticles = rndMinMax(1, maxParticlesPerEffectCount);
+	const unsigned int numParticlesToGenerate = rndMinMax(1, maxParticlesPerEffectCount);
+	auto& particles = getParticlesToWrite();
 
-	auto& particles = getActiveParticles();
-	
-	for (unsigned pIndex = 0; pIndex < numParticles; ++pIndex) {
+	for (unsigned pIndex = 0; pIndex < numParticlesToGenerate; ++pIndex)
+	{
 		auto& p = particles[pIndex];
 		initParticle(p, pos);
 	}
+
+	swapParticleBuffers();
+
+	_prevUpdateTime = getTime();
+	_timeVault = 0;
+
+	while(_isAlive && !_stopRequested) {
+
+		const auto currTime = getTime();
+		const auto dt = static_cast<float>(currTime - _prevUpdateTime);
+
+		_timeVault += dt * timeScale;
+		_prevUpdateTime = currTime;
+
+		if (_timeVault < timeStep) {
+			const float sleepTime = timeStep - _timeVault;
+			const auto sleepMs = static_cast<unsigned>(sleepTime * 1000.f);
+			std::this_thread::sleep_for(std::chrono::milliseconds(sleepMs));
+			continue;
+		}
+		
+		while (_isAlive && _timeVault >= timeStep && !_stopRequested)
+		{
+			_timeVault -= timeStep;
+			Update(timeStep);
+		}		
+	}
+
+	_stopRequested = false;
+}
+
+void Effect::Start(const Vec2F& pos) {
+
+	//printf("effect %i Start\n", _num);
 	
-	swapBuffers();
+	assert(_isAlive);
+	Join();
+
+	
+	_thread = std::thread([this, pos](){start(pos);});
 }
 
 void Effect::Activate() {
 	assert(!_isAlive);
 	_isAlive = true;
+
+	//printf("effect %i activated\n", _num);
 }
 
 void Effect::Deactivate() {
 	assert(_isAlive);
 	_isAlive = false;
+	
+	//const unsigned bufferInd = _bufferInd;
 
-	const unsigned bufferInd = _bufferInd;
-
+	swapParticleBuffers();
+	
 	// if deactivated, make both buffers equal
-	_particles[1 - bufferInd] = _particles[bufferInd];
+	//_particles[bufferInd] = _particles[1 - bufferInd];
+
+	Stop();
+
+	//printf("effect %i deactivated\n", _num);
 }
+
