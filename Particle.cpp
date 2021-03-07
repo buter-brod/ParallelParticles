@@ -54,7 +54,7 @@ bool Particle::GetIsWithinLifetime() const {
 	return _info.GetIsWithinLifetime();
 }
 
-void Particle::Update(float dt)
+void Particle::Update(double dt)
 {
 	assert(_isAlive);
 	_info._position._x += _speedVec._x * dt * _speed;

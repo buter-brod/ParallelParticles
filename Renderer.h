@@ -46,9 +46,9 @@ private:
 	int _height = 0;
 
 	int _frameCount = 0;
-	float _previousFPSTime = 0.f;
+	double _previousFPSTime = 0.f;
 
-	float _prevRenderTime = 0.f;
+	double _prevRenderTime = 0.f;
 
 	ParticleSystem* _particleSystem = nullptr;
 

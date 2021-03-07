@@ -11,8 +11,8 @@ size_t rnd()
 	return static_cast<size_t>(dist(rng));
 }
 
-float getTime() {
-	return static_cast<float>(glfwGetTime());
+double getTime() {
+	return glfwGetTime();
 }
 
 float rnd01() {

@@ -22,7 +22,9 @@ std::vector<ParticleVisualInfo> Effect::GetParticlesInfo() const {
 
 	// todo: guard! prevert swap buffers while copying
 
-	const auto& particlesToRead = getParticlesToRead();
+	_copyingFromBuffer = 1 - _particleBufferInd;
+
+	const auto& particlesToRead = _particles[_copyingFromBuffer];
 
 	std::vector<ParticleVisualInfo> particlesInfoVec;
 	particlesInfoVec.reserve(particlesToRead.size());
@@ -32,17 +34,20 @@ std::vector<ParticleVisualInfo> Effect::GetParticlesInfo() const {
 			particlesInfoVec.push_back(particle.GetVisualInfo());
 	}
 
+	_copyingFromBuffer = -1;
+	_copyingDoneCondition.notify_one();
+	
 	return particlesInfoVec;
 }
 
 const std::vector<Particle>& Effect::getParticlesToRead() const {
 
-	return _particles[1 - _bufferInd];
+	return _particles[1 - _particleBufferInd];
 }
 
 std::vector<Particle>& Effect::getParticlesToWrite()
 {
-	return _particles[_bufferInd];
+	return _particles[_particleBufferInd];
 }
 
 Effect::Effect() {
@@ -117,7 +122,7 @@ void Effect::checkParticleLife(Particle& p, const unsigned index) {
 	}
 }
 
-void Effect::update(const float dt) {
+void Effect::update(const double dt) {
 
 	//printf("effect %i Update\n", _num);
 
@@ -130,6 +135,16 @@ void Effect::update(const float dt) {
 	
 	bool hadAliveParticlesBefore = false;
 	bool hasAliveParticlesNow = false;
+
+	if (_copyingFromBuffer == _particleBufferInd) {
+
+		//const auto t1 = getTime();
+		std::unique_lock<std::mutex> copyGuard(_copyingMutex);
+		_copyingDoneCondition.wait(copyGuard, [this]{return _copyingFromBuffer != _particleBufferInd;});
+		//const auto t2 = getTime();
+		//const auto ddt = t2 - t1;
+		//printf("WOW waited for %.8f seconds because of buffer desync! \n", ddt);
+	}
 
 	const auto& particlesToRead = getParticlesToRead();
 	auto& particlesToWrite = getParticlesToWrite();
@@ -184,7 +199,11 @@ void Effect::swapExplodeBuffers() {
 }
 
 void Effect::swapParticleBuffers() {
-	_bufferInd ^= 1;
+
+	//std::unique_lock<std::mutex> lockBuffer(_copyingMutex);
+	//_copyingDoneCondition.wait(lockBuffer, [this]{return _copyingFromBuffer == -1;});
+	
+	_particleBufferInd ^= 1;
 
 	//printf("effect %i swapBuffers, now %i \n", _num, _bufferInd.load());
 }
@@ -216,8 +235,8 @@ void Effect::start(const Vec2F pos) {
 		_prevUpdateTime = currTime;
 
 		if (_timeVault < effectSimTimeStep) {
-			const float sleepTime = effectSimTimeStep - _timeVault;
-			const auto sleepMs = static_cast<unsigned>(sleepTime * 1000.f);
+			const double sleepTime = effectSimTimeStep - _timeVault;
+			const auto sleepMs = static_cast<unsigned>(sleepTime * 1000.0);
 			std::this_thread::sleep_for(std::chrono::milliseconds(sleepMs));
 			continue;
 		}
@@ -234,7 +253,14 @@ void Effect::Start(const Vec2F& pos) {
 
 	//printf("effect %i Start\n", _num);
 
+	//const auto t1 = getTime();
+
 	Join();
+	
+	//const auto t2 = getTime();
+	//const auto ddt = t2 - t1;
+	//printf("WOW waited for %.8f seconds for thread to join! \n", ddt);	
+	
 	assert(!_isAlive);
 	_isAlive = true;
 	_stopRequested = false;

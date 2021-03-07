@@ -1,11 +1,13 @@
 #pragma once
-#include <unordered_set>
+#include <queue>
+#include <set>
 #include "Effect.h"
 
 class ParticleSystem
 {
 public:
 	ParticleSystem();
+	~ParticleSystem();
 
 	void Start();
 	void Update(float dt);
@@ -15,14 +17,17 @@ public:
 	std::vector<Effect>& GetEffects();
 
 protected:
-	Effect* findUnusedEffect();
+	Effect* aquireUnusedEffect();
 	void update();
+
+	bool addToUnusedEffects(unsigned);
 
 private:
 	std::vector<Effect> _effects;
-	std::unordered_set<unsigned> _unusedEffects;
+	//std::queue<unsigned> _unusedEffectsQueue;
+	std::set<unsigned> _unusedEffectsSet;
 
 	std::atomic<bool> _stopExplode;
-	float _timeVault = 0.f;
+	double _timeVault = 0.f;
 };
 

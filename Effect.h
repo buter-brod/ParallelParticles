@@ -2,6 +2,7 @@
 #include <atomic>
 #include <set>
 #include <vector>
+#include <condition_variable>
 #include <thread>
 #include "Particle.h"
 
@@ -32,7 +33,7 @@ protected:
 	void swapExplodeBuffers();
 
 	void start(Vec2F pos);
-	void update(float dt);
+	void update(double dt);
 
 	void deactivate();
 
@@ -42,15 +43,19 @@ private:
 	std::vector<Particle> _particles[2];
 	std::set<Vec2F> _exploded[2];
 
-	float _timeVault = 0.f;
-	float _prevUpdateTime = 0.f;
+	double _timeVault = 0.f;
+	double _prevUpdateTime = 0.f;
 
 	std::thread _thread;
 
-	std::atomic<unsigned> _bufferInd = 0;
+	std::atomic<unsigned> _particleBufferInd = 0;
 	std::atomic<unsigned> _explodeInd = 0;
 	std::atomic<bool> _isAlive = false;
 	std::atomic<bool> _swapExplodesRequested;
 	std::atomic<bool> _stopRequested;
+
+	mutable std::atomic<int> _copyingFromBuffer = -1;
+	mutable std::condition_variable _copyingDoneCondition;
+	std::mutex _copyingMutex;
 };
 

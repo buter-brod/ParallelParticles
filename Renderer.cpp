@@ -243,12 +243,12 @@ void Renderer::renderParticle(const ParticleVisualInfo& particleInfo) {
 	}
 	else 
 	{
-		const float maxTime = particleInfo._maxLifetime;
-		const float currTime = particleInfo._currLifetime;
-		const float remainingTime = maxTime - currTime;
+		const auto maxTime = particleInfo._maxLifetime;
+		const auto currTime = particleInfo._currLifetime;
+		const auto remainingTime = maxTime - currTime;
 		if (remainingTime < particleFadeoutTime)
 		{
-			const float coeff = std::max(remainingTime / particleFadeoutTime, zeroScale);
+			const float coeff = std::max(static_cast<float>(remainingTime / particleFadeoutTime), zeroScale);
 			scale *= coeff;
 		}
 	}

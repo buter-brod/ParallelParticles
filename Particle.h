@@ -24,8 +24,8 @@ struct ParticleVisualInfo {
 	bool GetIsWithinLifetime() const;
 	
 	Vec2F _position;
-	float _currLifetime = 0.f;
-	float _maxLifetime = 0.f;
+	double _currLifetime = 0.f;
+	double _maxLifetime = 0.f;
 	float _color[3] = {1.f, 1.f, 1.f};
 };
 
@@ -43,7 +43,7 @@ public:
 	void SetColor(float r, float g, float b);
 	//void GetColor(float& r, float& g, float& b) const;
 
-	void Update(float dt);
+	void Update(double dt);
 	bool IsAlive() const { return _isAlive; }
 
 	bool GetIsWithinLifetime() const;
@@ -54,8 +54,8 @@ public:
 	void Deactivate();
 	void Activate();
 
-	float GetMaxLifetime() const {return _info._maxLifetime;}
-	float GetCurrLifetime() const { return _info._currLifetime; }
+	double GetMaxLifetime() const {return _info._maxLifetime;}
+	double GetCurrLifetime() const { return _info._currLifetime; }
 
 private:
 	ParticleVisualInfo _info;

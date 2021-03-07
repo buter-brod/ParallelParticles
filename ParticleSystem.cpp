@@ -2,12 +2,17 @@
 #include <set>
 #include <random>
 #include "Config.h"
+#include <cassert>
 
 ParticleSystem::ParticleSystem() {
 	_effects.resize(maxEffectsCount);
 
 	for (unsigned i = 0; i < _effects.size(); i++)
 		_effects[i]._num = i;
+}
+
+ParticleSystem::~ParticleSystem() {
+	Stop();
 }
 
 std::vector<Effect>& ParticleSystem::GetEffects() {
@@ -21,17 +26,23 @@ void ParticleSystem::Start() {
 	const Vec2F startPos(0.5f, 0.5f);
 
 	for(unsigned effInd = 0; effInd < maxEffectsCount; ++effInd)
-		_unusedEffects.insert(effInd);
+		addToUnusedEffects(effInd);
 
-	auto* initialEffect = findUnusedEffect();
+	auto* initialEffect = aquireUnusedEffect();
 	initialEffect->Start(startPos);
 }
 
-Effect* ParticleSystem::findUnusedEffect() {
+Effect* ParticleSystem::aquireUnusedEffect() {
 
-	if (!_unusedEffects.empty()) {
-		const auto ind = *_unusedEffects.begin();
-		_unusedEffects.erase(_unusedEffects.begin());
+	if (!_unusedEffectsSet.empty()) {
+
+		//const auto ind = _unusedEffectsQueue.front();
+		//_unusedEffectsQueue.pop();		
+		//_unusedEffectsSet.erase(ind);
+		//assert(_unusedEffectsQueue.size() == _unusedEffectsSet.size());
+		
+		const auto ind = *_unusedEffectsSet.begin();
+		_unusedEffectsSet.erase(_unusedEffectsSet.begin());
 		Effect* effect = &_effects[ind];
 		return effect;
 	}
@@ -62,6 +73,12 @@ void ParticleSystem::SoftStop() {
 	_stopExplode = true;
 }
 
+bool ParticleSystem::addToUnusedEffects(const unsigned index) {
+
+	_unusedEffectsSet.insert(index);
+	return true;
+}
+
 void ParticleSystem::update() {
 
 	//printf("ParticleSystem::update\n");
@@ -73,7 +90,7 @@ void ParticleSystem::update() {
 		Effect& effect = _effects.at(effectIndex);
 		
 		if (!effect.IsAlive()) {
-			_unusedEffects.insert(effectIndex);
+			addToUnusedEffects(effectIndex);
 			continue;
 		}
 
@@ -89,11 +106,10 @@ void ParticleSystem::update() {
 	std::shuffle(explodePosVec.begin(), explodePosVec.end(), std::default_random_engine());	
 
 	for (const auto& explodePos : explodePosVec) {
-		auto* newEffect = findUnusedEffect();
+		auto* newEffect = aquireUnusedEffect();
 			
 		if (newEffect) {
 			//printf("ParticleSystem::update unused effect found %i, will activate now \n", newEffect->_num);
-
 			
 			newEffect->Start(explodePos);
 		} else {
