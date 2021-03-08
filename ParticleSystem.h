@@ -14,11 +14,13 @@ public:
 	void Stop();
 	void SoftStop();
 
-	std::vector<Effect>& GetEffects();
+	const std::vector<Effect>& GetEffects() const;
 
 protected:
 	Effect* aquireUnusedEffect();
+	void start();
 	void update();
+	void stop();
 
 	bool addToUnusedEffects(unsigned);
 
@@ -28,6 +30,11 @@ private:
 	std::set<unsigned> _unusedEffectsSet;
 
 	std::atomic<bool> _stopExplode;
+
 	double _timeVault = 0.f;
+	double _prevUpdateTime = 0.f;
+
+	std::thread _thread;
+	std::atomic<bool> _stopRequested = false;
 };
 

@@ -20,8 +20,6 @@ Effect::~Effect() {
 
 std::vector<ParticleVisualInfo> Effect::GetParticlesInfo() const {
 
-	// todo: guard! prevert swap buffers while copying
-
 	_copyingFromBuffer = 1 - _particleBufferInd;
 
 	const auto& particlesToRead = _particles[_copyingFromBuffer];
@@ -229,7 +227,7 @@ void Effect::start(const Vec2F pos) {
 	while(_isAlive && !_stopRequested) {
 
 		const auto currTime = getTime();
-		const auto dt = static_cast<float>(currTime - _prevUpdateTime);
+		const auto dt = currTime - _prevUpdateTime;
 
 		_timeVault += dt * effectSimTimeScale;
 		_prevUpdateTime = currTime;

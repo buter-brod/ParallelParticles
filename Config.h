@@ -11,11 +11,11 @@ static constexpr float particleAlpha = 0.75f;
 
 static constexpr float particleExplodeProbability = 0.125f;
 
-static constexpr unsigned int maxEffectsCount = 128;
-static constexpr double particleSystemTimeStep = 0.01;
+static constexpr unsigned int maxEffectsCount = 2048;
+static constexpr double particleSystemTimeStep = 0.02;
 
-static constexpr unsigned int maxParticlesPerEffectCount = 128;
-static constexpr double effectSimTimeStep = 0.01;
+static constexpr unsigned int maxParticlesPerEffectCount = 64;
+static constexpr double effectSimTimeStep = 0.02;
 
 static constexpr float particleSystemTimeScale = 1.f;
 static constexpr float effectSimTimeScale = 1.f;
@@ -23,4 +23,4 @@ static constexpr float effectSimTimeScale = 1.f;
 static constexpr int sceneWidth = 1024;
 static constexpr int sceneHeight = 768;
 
-static constexpr unsigned maxThreads = 1024;
+//static constexpr unsigned maxThreads = 1024;

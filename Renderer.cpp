@@ -198,11 +198,11 @@ void Renderer::loop() {
 
 	while(!_stopRequest) {
 
-		const auto currTime = getTime();
-		const auto dt = static_cast<float>(currTime - _prevRenderTime);
+		//const auto currTime = getTime();
+		//const auto dt = static_cast<float>(currTime - _prevRenderTime);
 	
-		_particleSystem->Update(dt * particleSystemTimeScale);
-		_prevRenderTime = getTime();
+		//_particleSystem->Update(dt * particleSystemTimeScale);
+		//_prevRenderTime = getTime();
 
 		render();
 	}
@@ -282,8 +282,8 @@ void Renderer::render() {
 	
 	beginRender();
 
-	auto& effects = _particleSystem->GetEffects();
-	for (Effect& effect : effects)
+	const auto& effects = _particleSystem->GetEffects();
+	for (const Effect& effect : effects)
 	{
 		if (effect.IsAlive())
 			renderEffect(effect);
@@ -294,8 +294,15 @@ void Renderer::render() {
 
 void Renderer::endRender() {
 
+
+	const auto t1 = getTime();
+
 	glfwSwapBuffers(_window);
 
+	const auto t2 = getTime();
+	const auto dt = static_cast<float>(t2 - t1);
+
+	
 	glfwPollEvents();
 	if (GLFW_PRESS == glfwGetKey(_window, GLFW_KEY_ESCAPE))
 		_particleSystem->SoftStop();

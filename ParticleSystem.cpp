@@ -4,6 +4,8 @@
 #include "Config.h"
 #include <cassert>
 
+#include "Utils.h"
+
 ParticleSystem::ParticleSystem() {
 	_effects.resize(maxEffectsCount);
 
@@ -15,14 +17,12 @@ ParticleSystem::~ParticleSystem() {
 	Stop();
 }
 
-std::vector<Effect>& ParticleSystem::GetEffects() {
+const std::vector<Effect>& ParticleSystem::GetEffects() const {
 	return _effects;
 }
 
-void ParticleSystem::Start() {
+void ParticleSystem::start() {
 
-	//printf("ParticleSystem::Start\n");
-	
 	const Vec2F startPos(0.5f, 0.5f);
 
 	for(unsigned effInd = 0; effInd < maxEffectsCount; ++effInd)
@@ -30,6 +30,38 @@ void ParticleSystem::Start() {
 
 	auto* initialEffect = aquireUnusedEffect();
 	initialEffect->Start(startPos);
+
+	_prevUpdateTime = getTime();
+	_timeVault = 0;
+
+	while(!_stopRequested) {
+
+		const auto currTime = getTime();
+		const auto dt = currTime - _prevUpdateTime;
+
+		_timeVault += dt * particleSystemTimeScale;
+		_prevUpdateTime = currTime;
+
+		if (_timeVault < particleSystemTimeStep) {
+			const double sleepTime = particleSystemTimeStep - _timeVault;
+			const auto sleepMs = static_cast<unsigned>(sleepTime * 1000.0);
+			std::this_thread::sleep_for(std::chrono::milliseconds(sleepMs));
+			continue;
+		}
+		
+		while (_timeVault >= particleSystemTimeStep && !_stopRequested)
+		{
+			_timeVault -= particleSystemTimeStep;
+			update();
+		}		
+	}
+
+	stop();
+}
+
+void ParticleSystem::Start() {
+
+	_thread = std::thread([this](){start();});
 }
 
 Effect* ParticleSystem::aquireUnusedEffect() {
@@ -50,17 +82,24 @@ Effect* ParticleSystem::aquireUnusedEffect() {
 	return nullptr;
 }
 
-void ParticleSystem::Update(float dt)
-{
-	_timeVault += dt;
-
-	while (_timeVault > particleSystemTimeStep) {
-		_timeVault -= particleSystemTimeStep;
-		update();
-	}	
-}
+//void ParticleSystem::Update(float dt)
+//{
+//	_timeVault += dt;
+//
+//	while (_timeVault > particleSystemTimeStep) {
+//		_timeVault -= particleSystemTimeStep;
+//		update();
+//	}	
+//}
 
 void ParticleSystem::Stop() {
+
+	_stopRequested = true;
+	if (_thread.joinable())
+		_thread.join();
+}
+
+void ParticleSystem::stop() {
 
 	for (auto& effect : _effects)
 		effect.Stop();
@@ -115,6 +154,10 @@ void ParticleSystem::update() {
 		} else {
 			// sorry, limit reached
 		}
+	}
+
+	if (_unusedEffectsSet.size() == maxEffectsCount) {
+		_stopRequested = true;
 	}
 }
 
