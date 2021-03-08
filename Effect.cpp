@@ -18,26 +18,6 @@ Effect::~Effect() {
 	Join();
 }
 
-std::vector<ParticleVisualInfo> Effect::GetParticlesInfo() const {
-
-	_copyingFromBuffer = 1 - _particleBufferInd;
-
-	const auto& particlesToRead = _particles[_copyingFromBuffer];
-
-	std::vector<ParticleVisualInfo> particlesInfoVec;
-	particlesInfoVec.reserve(particlesToRead.size());
-
-	for (const auto& particle : particlesToRead) {
-		if (particle.IsAlive())
-			particlesInfoVec.push_back(particle.GetVisualInfo());
-	}
-
-	_copyingFromBuffer = -1;
-	_copyingDoneCondition.notify_one();
-	
-	return particlesInfoVec;
-}
-
 const std::vector<Particle>& Effect::getParticlesToRead() const {
 
 	return _particles[1 - _particleBufferInd];
@@ -81,11 +61,6 @@ std::set<Vec2F> Effect::GetExploded() {
 	
 	readExplodeSet = _exploded[1 - _explodeInd];
 	_swapExplodesRequested = true;
-
-	//const auto explodedSize = readExplodeSet.size();
-	//if (explodedSize > 0)
-		//printf("effect %i, GetExploded called, returning %i explodes \n", _num, explodedSize);
-
 	return readExplodeSet;
 }
 
@@ -124,40 +99,15 @@ void Effect::update(const double dt) {
 
 	//printf("effect %i Update\n", _num);
 
-	if (_swapExplodesRequested)
-	{
-		swapExplodeBuffers();
-		_exploded[_explodeInd].clear();
-		_swapExplodesRequested = false;
-	}
-	
-	bool hadAliveParticlesBefore = false;
 	bool hasAliveParticlesNow = false;
 
-	if (_copyingFromBuffer == _particleBufferInd) {
-
-		//const auto t1 = getTime();
-		std::unique_lock<std::mutex> copyGuard(_copyingMutex);
-		_copyingDoneCondition.wait(copyGuard, [this]{return _copyingFromBuffer != _particleBufferInd;});
-		//const auto t2 = getTime();
-		//const auto ddt = t2 - t1;
-		//printf("WOW waited for %.8f seconds because of buffer desync! \n", ddt);
-	}
-
-	const auto& particlesToRead = getParticlesToRead();
 	auto& particlesToWrite = getParticlesToWrite();
 
-	for (unsigned index = 0; index < particlesToRead.size(); ++index) {
+	for (unsigned index = 0; index < particlesToWrite.size(); ++index) {
 
 		auto& particleToWrite = particlesToWrite.at(index);
-
-		// copying
-		particleToWrite = particlesToRead.at(index);
-		
 		const bool alive = particleToWrite.IsAlive();
 		if (alive) {
-
-			hadAliveParticlesBefore |= true;
 
 			particleToWrite.Update(dt);
 			checkParticleLife(particleToWrite, index);
@@ -166,14 +116,9 @@ void Effect::update(const double dt) {
 		}
 	}
 
-	if (hadAliveParticlesBefore || hasAliveParticlesNow) {
-		swapParticleBuffers();
-	}
-
 	if (!hasAliveParticlesNow) {
-		const bool noExplosionsPending = _exploded[_explodeInd].empty() && _exploded[1 - _explodeInd].empty();
+		const bool noExplosionsPending = _exploded[0].empty() && _exploded[1].empty();
 		if (noExplosionsPending) {
-			swapParticleBuffers();
 			deactivate();
 		}
 	}
@@ -189,19 +134,33 @@ void Effect::Stop() {
 	_stopRequested = true;
 }
 
+const std::vector<Particle>& Effect::GetParticles() const {
+	const auto& particles = getParticlesToRead();
+	return particles;
+}
+
+void Effect::RequestSwapParticleBuffer() const {
+	
+	_swapBuffersRequested = true;
+}
+
 void Effect::swapExplodeBuffers() {
 
 	_explodeInd ^= 1;
+	_exploded[_explodeInd].clear();
+	_swapExplodesRequested = false;
 
 	//printf("effect %i swapExplodes, now %i \n", _num, _explodeInd.load());
 }
 
 void Effect::swapParticleBuffers() {
 
-	//std::unique_lock<std::mutex> lockBuffer(_copyingMutex);
-	//_copyingDoneCondition.wait(lockBuffer, [this]{return _copyingFromBuffer == -1;});
-	
 	_particleBufferInd ^= 1;
+	_swapBuffersRequested = false;
+
+	auto& toWrite = getParticlesToWrite();
+	const auto& toRead = getParticlesToRead();
+	toWrite = toRead;
 
 	//printf("effect %i swapBuffers, now %i \n", _num, _bufferInd.load());
 }
@@ -238,12 +197,21 @@ void Effect::start(const Vec2F pos) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(sleepMs));
 			continue;
 		}
-		
+
 		while (_isAlive && _timeVault >= effectSimTimeStep && !_stopRequested)
 		{
 			_timeVault -= effectSimTimeStep;
 			update(effectSimTimeStep);
-		}		
+		}
+
+		if (_isAlive)
+		{
+			if (_swapBuffersRequested)
+				swapParticleBuffers();
+			
+			if (_swapExplodesRequested)
+				swapExplodeBuffers();
+		}
 	}
 }
 
@@ -251,13 +219,7 @@ void Effect::Start(const Vec2F& pos) {
 
 	//printf("effect %i Start\n", _num);
 
-	//const auto t1 = getTime();
-
 	Join();
-	
-	//const auto t2 = getTime();
-	//const auto ddt = t2 - t1;
-	//printf("WOW waited for %.8f seconds for thread to join! \n", ddt);	
 	
 	assert(!_isAlive);
 	_isAlive = true;
@@ -269,6 +231,8 @@ void Effect::Start(const Vec2F& pos) {
 void Effect::deactivate() {
 	assert(_isAlive);
 	_isAlive = false;
+
+	swapParticleBuffers();
 	
 	Stop();
 

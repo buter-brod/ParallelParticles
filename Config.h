@@ -9,9 +9,9 @@ static constexpr float particleScaleDefault = 0.01f;
 static constexpr double particleFadeoutTime = 0.5;
 static constexpr float particleAlpha = 0.75f;
 
-static constexpr float particleExplodeProbability = 0.125f;
+static constexpr float particleExplodeProbability = 0.25f;
 
-static constexpr unsigned int maxEffectsCount = 2048;
+static constexpr unsigned int maxEffectsCount = 1024;
 static constexpr double particleSystemTimeStep = 0.02;
 
 static constexpr unsigned int maxParticlesPerEffectCount = 64;

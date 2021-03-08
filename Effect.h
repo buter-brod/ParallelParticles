@@ -20,8 +20,11 @@ public:
 	void Join();
 
 	bool IsAlive() const { return _isAlive; }
+
+	const std::vector<Particle>& GetParticles() const;
+	void RequestSwapParticleBuffer() const;
 	
-	std::vector<ParticleVisualInfo> GetParticlesInfo() const;
+	//std::vector<ParticleVisualInfo> GetParticlesInfo() const;
 	std::set<Vec2F> GetExploded();
 
 	unsigned _num = 0; //TODO DEBUG!!! REMOVE!!!
@@ -51,11 +54,9 @@ private:
 	std::atomic<unsigned> _particleBufferInd = 0;
 	std::atomic<unsigned> _explodeInd = 0;
 	std::atomic<bool> _isAlive = false;
-	std::atomic<bool> _swapExplodesRequested;
-	std::atomic<bool> _stopRequested;
-
-	mutable std::atomic<int> _copyingFromBuffer = -1;
-	mutable std::condition_variable _copyingDoneCondition;
-	std::mutex _copyingMutex;
+	std::atomic<bool> _swapExplodesRequested = false;
+	mutable std::atomic<bool> _swapBuffersRequested = false;
+	
+	std::atomic<bool> _stopRequested = false;
 };
 

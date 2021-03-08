@@ -1,6 +1,5 @@
 #pragma once
 
-#include <thread>
 #include <vector>
 
 struct GLFWwindow;
@@ -46,9 +45,9 @@ private:
 	int _height = 0;
 
 	int _frameCount = 0;
-	double _previousFPSTime = 0.f;
+	double _previousFPSTime = 0.0;
 
-	double _prevRenderTime = 0.f;
+	double _prevRenderTime = 0.0;
 
 	ParticleSystem* _particleSystem = nullptr;
 

@@ -1,6 +1,5 @@
 #include "Renderer.h"
 #include <cstdio>
-#include <functional>
 #include <string>
 
 #include <GL/glew.h>
@@ -10,7 +9,7 @@
 #include "ParticleSystem.h"
 #include "Utils.h"
 
-constexpr float fpsUpdateInterval = 0.25f;
+constexpr float fpsUpdateInterval = 4.f;
 
 Renderer*& RendererPtr() {
 	static Renderer* r = nullptr;
@@ -59,7 +58,7 @@ void Renderer::updateFPS()
 		_previousFPSTime = currentTime;
 		const double fps = static_cast<double>(_frameCount) / elapsed;
 		char txtBuf[128];
-		sprintf_s(txtBuf, "opengl @ fps: %.2f, particles %i effects %i", fps, _particlesRendered, _effectsRendered);
+		sprintf_s(txtBuf, "opengl @ fps: %.2f, particles %u effects %u", fps, _particlesRendered, _effectsRendered);
 		glfwSetWindowTitle(_window, txtBuf);
 		_frameCount = 0;
 	}
@@ -122,15 +121,11 @@ bool Renderer::init() {
 
 	glfwMakeContextCurrent(_window);
 	glewInit();
-	//glEnable(GL_DEPTH_TEST);
-	//glDepthFunc(GL_LESS);
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	
-
-	float points[] = {
+	static float points[] = {
 		0.0f,  1.f,  0.0f,
 		1.f, -1.f,  0.0f,
 		-1.f, -1.f,  0.0f
@@ -157,26 +152,6 @@ bool Renderer::init() {
 	const GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
 	glShaderSource(fs, 1, &fsStr, nullptr);
 	glCompileShader(fs);
-
-	//{
-	//	GLint isCompiled = 0;
-	//	glGetShaderiv(vs, GL_COMPILE_STATUS, &isCompiled);
-	//	if (isCompiled == GL_FALSE)
-	//	{
-	//		GLint maxLength = 0;
-	//		glGetShaderiv(vs, GL_INFO_LOG_LENGTH, &maxLength);
-
-	//		// The maxLength includes the NULL character
-	//		std::vector<GLchar> errorLog(maxLength);
-	//		glGetShaderInfoLog(vs, maxLength, &maxLength, &errorLog[0]);
-	//		char *j = new char [maxLength];
-	//		memcpy(j, &errorLog[0], maxLength);
-
-	//		// Provide the infolog in whatever manor you deem best.
-	//		// Exit with failure.
-	//		glDeleteShader(vs); // Don't leak the shader.
-	//	}
-	//}
 
 	_shader = glCreateProgram();
 	glAttachShader(_shader, fs);
@@ -266,12 +241,18 @@ void Renderer::renderParticle(const ParticleVisualInfo& particleInfo) {
 }
 
 void Renderer::renderEffect(const Effect& effect) {
-	
-	const auto& particles = effect.GetParticlesInfo();
-	for (const auto& particleInfo : particles) {
 
-		renderParticle(particleInfo);
+	const auto& particles = effect.GetParticles();
+	for (const auto& particle : particles) {
+
+		if (!particle.IsAlive())
+			continue;
+
+		const auto& info = particle.GetVisualInfo();
+		renderParticle(info);
 	}
+
+	effect.RequestSwapParticleBuffer();
 
 	++_effectsRendered;
 }
@@ -285,15 +266,15 @@ void Renderer::render() {
 	const auto& effects = _particleSystem->GetEffects();
 	for (const Effect& effect : effects)
 	{
-		if (effect.IsAlive())
+		if (effect.IsAlive()) {
 			renderEffect(effect);
+		}
 	}
 
 	endRender();
 }
 
 void Renderer::endRender() {
-
 
 	const auto t1 = getTime();
 

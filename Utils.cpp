@@ -1,6 +1,8 @@
 #include "Utils.h"
+
+#include <chrono>
 #include <random>
-#include <GLFW/glfw3.h>
+//#include <GLFW/glfw3.h>
 
 static const float RANDOM_STRENGTH = 5000.f;
 
@@ -12,7 +14,15 @@ size_t rnd()
 }
 
 double getTime() {
-	return glfwGetTime();
+
+	const auto now = std::chrono::system_clock::now();
+	const auto duration = now.time_since_epoch();
+	const auto mcs = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
+
+	const double seconds = static_cast<double>(mcs) / 1000.0 / 1000.0;
+	return seconds;
+	
+	//return glfwGetTime();
 }
 
 float rnd01() {

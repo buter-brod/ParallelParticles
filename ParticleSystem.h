@@ -1,5 +1,4 @@
 #pragma once
-#include <queue>
 #include <set>
 #include "Effect.h"
 
@@ -26,10 +25,9 @@ protected:
 
 private:
 	std::vector<Effect> _effects;
-	//std::queue<unsigned> _unusedEffectsQueue;
 	std::set<unsigned> _unusedEffectsSet;
 
-	std::atomic<bool> _stopExplode;
+	std::atomic<bool> _stopExplode = false;
 
 	double _timeVault = 0.f;
 	double _prevUpdateTime = 0.f;

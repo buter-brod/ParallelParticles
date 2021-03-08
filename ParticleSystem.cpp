@@ -2,8 +2,6 @@
 #include <set>
 #include <random>
 #include "Config.h"
-#include <cassert>
-
 #include "Utils.h"
 
 ParticleSystem::ParticleSystem() {
@@ -67,11 +65,6 @@ void ParticleSystem::Start() {
 Effect* ParticleSystem::aquireUnusedEffect() {
 
 	if (!_unusedEffectsSet.empty()) {
-
-		//const auto ind = _unusedEffectsQueue.front();
-		//_unusedEffectsQueue.pop();		
-		//_unusedEffectsSet.erase(ind);
-		//assert(_unusedEffectsQueue.size() == _unusedEffectsSet.size());
 		
 		const auto ind = *_unusedEffectsSet.begin();
 		_unusedEffectsSet.erase(_unusedEffectsSet.begin());
@@ -81,16 +74,6 @@ Effect* ParticleSystem::aquireUnusedEffect() {
 	
 	return nullptr;
 }
-
-//void ParticleSystem::Update(float dt)
-//{
-//	_timeVault += dt;
-//
-//	while (_timeVault > particleSystemTimeStep) {
-//		_timeVault -= particleSystemTimeStep;
-//		update();
-//	}	
-//}
 
 void ParticleSystem::Stop() {
 
