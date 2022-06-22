@@ -170,16 +170,35 @@ bool Renderer::init() {
 void Renderer::loop() {
 	
 	_prevRenderTime = getTime();
+	_timeVault = 0;
 
 	while(!_stopRequest) {
 
-		//const auto currTime = getTime();
-		//const auto dt = static_cast<float>(currTime - _prevRenderTime);
-	
-		//_particleSystem->Update(dt * particleSystemTimeScale);
-		//_prevRenderTime = getTime();
+		const auto currTime = getTime();
+		const auto dt = static_cast<float>(currTime - _prevRenderTime);
+		_timeVault += dt;
+		_prevRenderTime = currTime;
 
-		render();
+		constexpr float renderMinCooldown = 0.015f;
+
+		if (_timeVault < renderMinCooldown) {
+			const double sleepTime = renderMinCooldown - _timeVault;
+			const auto sleepMs = static_cast<unsigned>(sleepTime * 1000.0);
+			std::this_thread::sleep_for(std::chrono::milliseconds(sleepMs));
+			continue;
+		}
+
+		while (_timeVault >= renderMinCooldown && !_stopRequest)
+		{
+			_timeVault -= renderMinCooldown;
+
+			const auto beforeRender = getTime();
+			render();
+			const auto afterRender = getTime();
+
+			const auto renderDuration = afterRender - beforeRender;
+			//printf("RENDER %f\n", renderDuration);
+		}
 	}
 
 	_particleSystem->Stop();

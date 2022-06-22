@@ -11,10 +11,10 @@ static constexpr float particleAlpha = 0.75f;
 
 static constexpr float particleExplodeProbability = 0.25f;
 
-static constexpr unsigned int maxEffectsCount = 1024;
-static constexpr double particleSystemTimeStep = 0.02;
+static constexpr unsigned int maxEffectsCount = 128;
+static constexpr double particleSystemTimeStep = 0.03;
 
-static constexpr unsigned int maxParticlesPerEffectCount = 64;
+static constexpr unsigned int maxParticlesPerEffectCount = 512;
 static constexpr double effectSimTimeStep = 0.02;
 
 static constexpr float particleSystemTimeScale = 1.f;

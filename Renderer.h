@@ -48,6 +48,7 @@ private:
 	double _previousFPSTime = 0.0;
 
 	double _prevRenderTime = 0.0;
+	double _timeVault = 0.f;
 
 	ParticleSystem* _particleSystem = nullptr;
 

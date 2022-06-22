@@ -57,8 +57,8 @@ bool Particle::GetIsWithinLifetime() const {
 void Particle::Update(double dt)
 {
 	assert(_isAlive);
-	_info._position._x += _speedVec._x * dt * _speed;
-	_info._position._y += _speedVec._y * dt * _speed;
+	_info._position._x += _speedVec._x * float(dt) * _speed;
+	_info._position._y += _speedVec._y * float(dt) * _speed;
 
 	_info._currLifetime += dt;
 }

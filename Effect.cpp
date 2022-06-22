@@ -15,7 +15,7 @@ Effect::~Effect() {
 	if (_isAlive)
 		deactivate();
 	
-	Join();
+	DetachThread();
 }
 
 const std::vector<Particle>& Effect::getParticlesToRead() const {
@@ -124,13 +124,16 @@ void Effect::update(const double dt) {
 	}
 }
 
-void Effect::Join() {
+void Effect::DetachThread() {
 
-	if (_thread.joinable())
-		_thread.join();
+	if (_thread.joinable() )
+	{
+		_thread.detach();
+	}
+
 }
 
-void Effect::Stop() {
+void Effect::RequestThreadStop() {
 	_stopRequested = true;
 }
 
@@ -168,6 +171,8 @@ void Effect::swapParticleBuffers() {
 void Effect::start(const Vec2F pos) {
 
 	//printf("effect %i start\n", _num);
+
+	_isThreadRunning = true;
 
 	const unsigned int numParticlesToGenerate = rndMinMax(1, maxParticlesPerEffectCount);
 	auto& particles = getParticlesToWrite();
@@ -213,15 +218,18 @@ void Effect::start(const Vec2F pos) {
 				swapExplodeBuffers();
 		}
 	}
+
+	_isThreadRunning = false;
 }
 
 void Effect::Start(const Vec2F& pos) {
 
 	//printf("effect %i Start\n", _num);
 
-	Join();
 	
-	assert(!_isAlive);
+	assert(!_isAlive && !_isThreadRunning);
+
+	DetachThread();
 	_isAlive = true;
 	_stopRequested = false;
 	
@@ -234,7 +242,7 @@ void Effect::deactivate() {
 
 	swapParticleBuffers();
 	
-	Stop();
+	RequestThreadStop();
 
 	//printf("effect %i deactivated\n", _num);
 }

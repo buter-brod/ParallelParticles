@@ -36,7 +36,7 @@ float rnd0xf(const float x) {
 unsigned int rnd0xi(const unsigned int x) {
 	const auto randomNum = rnd();
 	const auto result = randomNum % (x + 1);
-	return result;
+	return static_cast<unsigned>(result);
 }
 
 unsigned int rndMinMax(const unsigned int min, const unsigned int max)

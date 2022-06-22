@@ -85,10 +85,10 @@ void ParticleSystem::Stop() {
 void ParticleSystem::stop() {
 
 	for (auto& effect : _effects)
-		effect.Stop();
+		effect.RequestThreadStop();
 
 	for (auto& effect : _effects)
-		effect.Join();
+		effect.DetachThread();
 }
 
 void ParticleSystem::SoftStop() {
@@ -110,10 +110,14 @@ void ParticleSystem::update() {
 	for(unsigned effectIndex = 0; effectIndex < _effects.size(); ++effectIndex) {
 
 		Effect& effect = _effects.at(effectIndex);
-		
-		if (!effect.IsAlive()) {
-			addToUnusedEffects(effectIndex);
-			continue;
+
+		if (!effect.IsAlive())
+		{
+			if (!effect.IsThreadRunning())
+			{
+				addToUnusedEffects(effectIndex);
+				continue;
+			}
 		}
 
 		const auto& exploded = effect.GetExploded();

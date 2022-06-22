@@ -16,10 +16,11 @@ public:
 	
 	void Start(const Vec2F& pos);
 	
-	void Stop();
-	void Join();
+	void RequestThreadStop();
+	void DetachThread();
 
 	bool IsAlive() const { return _isAlive; }
+	bool IsThreadRunning() const { return _isThreadRunning; }
 
 	const std::vector<Particle>& GetParticles() const;
 	void RequestSwapParticleBuffer() const;
@@ -54,6 +55,7 @@ private:
 	std::atomic<unsigned> _particleBufferInd = 0;
 	std::atomic<unsigned> _explodeInd = 0;
 	std::atomic<bool> _isAlive = false;
+	std::atomic<bool> _isThreadRunning = false;
 	std::atomic<bool> _swapExplodesRequested = false;
 	mutable std::atomic<bool> _swapBuffersRequested = false;
 	
